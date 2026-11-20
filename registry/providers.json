@@ -26,8 +26,8 @@
           "required": false
         }
       ],
-      "version": "1.0.0",
-      "sha256": "cf82714e4cdf0b118c13d957bc6629b1a8a239b9199e144ea0395968d2a85c68",
+      "version": "2.0.1",
+      "sha256": "5dfd6b3ddf640576fd826f8e75dbe6c054c29e95bd47d2c08990af09f5dc1f9e",
       "vinput_version": ">= 2.0.0"
     },
     {
@@ -59,8 +59,8 @@
           "required": false
         }
       ],
-      "version": "1.0.0",
-      "sha256": "cb0ecd71202264c5d8c9afc687f1a11ad3885fd6ce243792bd7dc37a70e48324",
+      "version": "2.0.1",
+      "sha256": "15e1f1ffa8ac25563f458756f8acc0a3faa4a2592459573f319d2a5433d7e28c",
       "vinput_version": ">= 2.0.0"
     },
     {
@@ -92,8 +92,37 @@
           "required": false
         }
       ],
-      "version": "1.0.0",
-      "sha256": "17d839f18eef0da1e9f995a1b4c4f159ca5f349ae43eb368914b42ce0055c3d0",
+      "version": "2.0.1",
+      "sha256": "dee53a61507bd78ce248d757bf61348c6fe3f4e86d47be12b8d1c176c9c365d2",
+      "vinput_version": ">= 2.0.0"
+    },
+    {
+      "id": "provider.assemblyai.batch",
+      "short_id": "aai-batch",
+      "stream": false,
+      "command": "python3",
+      "script_urls": [
+        "https://raw.githubusercontent.com/xifan2333/vinput-registry/main/resources/providers/assemblyai/batch/entry.py",
+        "https://gh-proxy.com/https://raw.githubusercontent.com/xifan2333/vinput-registry/main/resources/providers/assemblyai/batch/entry.py",
+        "https://ghfast.top/https://raw.githubusercontent.com/xifan2333/vinput-registry/main/resources/providers/assemblyai/batch/entry.py"
+      ],
+      "readme_url": "https://github.com/xifan2333/vinput-registry/blob/main/resources/providers/assemblyai/batch/README.md",
+      "envs": [
+        {
+          "name": "VINPUT_ASR_API_KEY",
+          "required": true
+        },
+        {
+          "name": "VINPUT_ASR_LANGUAGE",
+          "required": false
+        },
+        {
+          "name": "VINPUT_ASR_ASSEMBLYAI_VERBATIM",
+          "required": false
+        }
+      ],
+      "version": "2.0.1",
+      "sha256": "259cc05339a80258d3b1d3c990e50d6cb0a21dc1159e799226f9273123bcae6a",
       "vinput_version": ">= 2.0.0"
     },
     {
@@ -121,8 +150,8 @@
           "required": false
         }
       ],
-      "version": "1.0.0",
-      "sha256": "f34d85a5bbcab99b8d010713e222467f2ce0a178fb776b686078490c4efbe315",
+      "version": "2.0.1",
+      "sha256": "c8498034d639b60f3d6123865d37223002714d0f46cbae2afba9d47045a66364",
       "vinput_version": ">= 2.0.0"
     },
     {
@@ -150,21 +179,21 @@
           "required": false
         }
       ],
-      "version": "1.0.0",
-      "sha256": "a14068b524ba8381b0908125c264b00a9e9f6ed865850b555fefa8cafa4f9c0c",
+      "version": "2.0.1",
+      "sha256": "0c5bd6621287e140cdaaad8495c2d152c56179544e22667967450ab6864c6601",
       "vinput_version": ">= 2.0.0"
     },
     {
-      "id": "provider.bailian.qwen-audio3.streaming",
+      "id": "provider.bailian.qwen-audio3-streaming",
       "short_id": "bailian-qwen-audio3-stream",
       "stream": true,
       "command": "python3",
       "script_urls": [
-        "https://raw.githubusercontent.com/xifan2333/vinput-registry/main/resources/providers/bailian/qwen-audio3.streaming/entry.py",
-        "https://gh-proxy.com/https://raw.githubusercontent.com/xifan2333/vinput-registry/main/resources/providers/bailian/qwen-audio3.streaming/entry.py",
-        "https://ghfast.top/https://raw.githubusercontent.com/xifan2333/vinput-registry/main/resources/providers/bailian/qwen-audio3.streaming/entry.py"
+        "https://raw.githubusercontent.com/xifan2333/vinput-registry/main/resources/providers/bailian/qwen-audio3-streaming/entry.py",
+        "https://gh-proxy.com/https://raw.githubusercontent.com/xifan2333/vinput-registry/main/resources/providers/bailian/qwen-audio3-streaming/entry.py",
+        "https://ghfast.top/https://raw.githubusercontent.com/xifan2333/vinput-registry/main/resources/providers/bailian/qwen-audio3-streaming/entry.py"
       ],
-      "readme_url": "https://github.com/xifan2333/vinput-registry/blob/main/resources/providers/bailian/qwen-audio3.streaming/README.md",
+      "readme_url": "https://github.com/xifan2333/vinput-registry/blob/main/resources/providers/bailian/qwen-audio3-streaming/README.md",
       "envs": [
         {
           "name": "VINPUT_ASR_API_KEY",
@@ -215,8 +244,53 @@
           "required": false
         }
       ],
-      "version": "1.0.0",
-      "sha256": "15e7c39397f4a1c29c1297b93dbdf8ec19704a5687cf63c073b5781bd9016378",
+      "version": "2.0.1",
+      "sha256": "58a541d61e6bdd561cc5daeca3ef659a560398f52f1d3dd28ef6426371d09dfa",
+      "vinput_version": ">= 2.0.0"
+    },
+    {
+      "id": "provider.bailian.qwen-audio3-batch",
+      "short_id": "bailian-qwen-audio3-batch",
+      "stream": false,
+      "command": "python3",
+      "script_urls": [
+        "https://raw.githubusercontent.com/xifan2333/vinput-registry/main/resources/providers/bailian/qwen-audio3-batch/entry.py",
+        "https://gh-proxy.com/https://raw.githubusercontent.com/xifan2333/vinput-registry/main/resources/providers/bailian/qwen-audio3-batch/entry.py",
+        "https://ghfast.top/https://raw.githubusercontent.com/xifan2333/vinput-registry/main/resources/providers/bailian/qwen-audio3-batch/entry.py"
+      ],
+      "readme_url": "https://github.com/xifan2333/vinput-registry/blob/main/resources/providers/bailian/qwen-audio3-batch/README.md",
+      "envs": [
+        {
+          "name": "VINPUT_ASR_API_KEY",
+          "required": true
+        },
+        {
+          "name": "VINPUT_ASR_MODEL",
+          "required": false
+        },
+        {
+          "name": "VINPUT_ASR_LANGUAGE",
+          "required": false
+        },
+        {
+          "name": "VINPUT_ASR_PROMPT",
+          "required": false
+        },
+        {
+          "name": "VINPUT_ASR_WORKSPACE_ID",
+          "required": false
+        },
+        {
+          "name": "VINPUT_ASR_URL",
+          "required": false
+        },
+        {
+          "name": "VINPUT_ASR_TIMEOUT",
+          "required": false
+        }
+      ],
+      "version": "2.0.1",
+      "sha256": "90167e247fe2d91d4df7d7ed892165322fad3a9a32e6cc955dd0cd618028bd50",
       "vinput_version": ">= 2.0.0"
     },
     {
@@ -244,8 +318,8 @@
           "required": false
         }
       ],
-      "version": "1.0.0",
-      "sha256": "1b3a748b619582118a36e006c77d8a52b431dc35316f50ba4199992a9bdde3a4",
+      "version": "2.0.1",
+      "sha256": "eb3e464f6742d43bcbd99311a08c65bc0a1b82ec67f70cdfcd4791d63da2ac73",
       "vinput_version": ">= 2.0.0"
     },
     {
@@ -260,8 +334,8 @@
       ],
       "readme_url": "https://github.com/xifan2333/vinput-registry/blob/main/resources/providers/doubaoime/streaming/README.md",
       "envs": [],
-      "version": "1.0.0",
-      "sha256": "25aa69c4aaa2c495392a8172cf78fb45deaf4155c257183dc6c7bb18334aacdd",
+      "version": "2.0.1",
+      "sha256": "f9c757016ab8776ee74bbeed47d619c3b445ebed25ffe1098c9668eb1400357a",
       "vinput_version": ">= 2.0.0"
     },
     {
@@ -276,8 +350,8 @@
       ],
       "readme_url": "https://github.com/xifan2333/vinput-registry/blob/main/resources/providers/wetype/streaming/README.md",
       "envs": [],
-      "version": "1.0.0",
-      "sha256": "119a7f9a7cd0d6b942ec591c5ec9e03a196026cd4a1d3d15041f76d3396639eb",
+      "version": "2.0.1",
+      "sha256": "05e920479e09a96e274dec615f79d30e4911921bbf5971235edf4b94b517dd4e",
       "vinput_version": ">= 2.0.0"
     },
     {
@@ -305,8 +379,8 @@
           "required": false
         }
       ],
-      "version": "1.0.0",
-      "sha256": "bbb5ea5e4b916f8c4be66f20752ee898e63dcd3b9ec422b5a7760b653a1655a3",
+      "version": "2.0.1",
+      "sha256": "60a761a786f7dc0f6b71163a788362c592db4a110671a2d4223c2307f42ab22d",
       "vinput_version": ">= 2.0.0"
     },
     {
@@ -342,8 +416,8 @@
           "required": false
         }
       ],
-      "version": "1.0.0",
-      "sha256": "920f0ff1797fe3f471863ed46a9431da715b8bcca0a373ccf83a3044dd2532bb",
+      "version": "2.0.2",
+      "sha256": "b3ba827ee115e3be3377091fd0ba42907a17845e8e4e18395b2f2b3fbbedd1c2",
       "vinput_version": ">= 2.0.0"
     },
     {
@@ -371,8 +445,8 @@
           "required": false
         }
       ],
-      "version": "1.0.0",
-      "sha256": "cb16b51d5ffaa886ff180a36b17b17e059de76416dd04063677a60656a196de3",
+      "version": "2.0.1",
+      "sha256": "0321306f15c88da6704726422dc5f65a3a0a7e03ae04c184c664c95308d495e7",
       "vinput_version": ">= 2.0.0"
     },
     {
@@ -424,8 +498,8 @@
           "required": false
         }
       ],
-      "version": "1.0.0",
-      "sha256": "aa0c3d55d4e84720fbb514f3f964bb01e86b8213d229341b187ab22fe800601c",
+      "version": "2.0.1",
+      "sha256": "d2cf6f4c681407eb168f9323e7e21bade9906de0829b46be8998f858bed51bf3",
       "vinput_version": ">= 2.0.0"
     },
     {
@@ -461,8 +535,8 @@
           "required": false
         }
       ],
-      "version": "1.0.0",
-      "sha256": "63267f06abfce9cd1b8439d8b072cf0c3b5e59a77e1af408418d7fc10243430e",
+      "version": "2.0.1",
+      "sha256": "4b1dc1346a288f49be83b724d28a1c72174c285f24c215bb9dd2c250908da5bb",
       "vinput_version": ">= 2.0.0"
     },
     {
@@ -486,8 +560,8 @@
           "required": false
         }
       ],
-      "version": "1.0.0",
-      "sha256": "56d785e0cb50777ef4273f6fff64e156b9d5b7dd4394d8aa940eb2a39803f9f9",
+      "version": "2.0.1",
+      "sha256": "83a192209909ce714e4c220677df0b61066400c958c39aff64f2cb833c6a904e",
       "vinput_version": ">= 2.0.0"
     },
     {
@@ -502,8 +576,8 @@
       ],
       "readme_url": "https://github.com/xifan2333/vinput-registry/blob/main/resources/providers/iflyime/streaming/README.md",
       "envs": [],
-      "version": "1.0.0",
-      "sha256": "9eddb2b84cf1565eb6d91581cca19cd28eb5d67c02c9c029c3e21c0846fa4fbe",
+      "version": "2.0.1",
+      "sha256": "c0fb967eb21c8355eef8f5fab6035f58cb2d31997a6dfcdb99bb40952d7eab73",
       "vinput_version": ">= 2.0.0"
     }
   ]

@@ -30,10 +30,10 @@ Verify repository roles before making changes:
   - `adapters.json`: Managed local LLM scene adapter bridge scripts.
   - `triggers.json`: Managed Trigger peripheral scripts (session control).
   - `receivers.json`: Managed Receiver scripts (result consumers).
-- `resources/providers/<group>/<name>/`: Standalone Python 3 scripts (`entry.py` + `README.md`).
-- `resources/adapters/<group>/<name>/`: Standalone Python 3 adapter scripts (`entry.py` + `README.md`).
-- `resources/triggers/<group>/<name>/`: Standalone Python 3 trigger scripts (`entry.py` + `README.md`).
-- `resources/receivers/<group>/<name>/`: Standalone Python 3 receiver scripts (`entry.py` + `README.md`).
+- `resources/providers/<vendor>/<name>/`: Standalone Python 3 scripts (`entry.py` + `README.md`).
+- `resources/adapters/<name>/`: Standalone Python 3 adapter scripts (`entry.py` + `README.md`).
+- `resources/triggers/<vendor>/<name>/`: Standalone Python 3 trigger scripts (`entry.py` + `README.md`).
+- `resources/receivers/<name>/`: Standalone Python 3 receiver scripts (`entry.py` + `README.md`).
 - `i18n/`: Multilingual display text (`en_US.json`, `zh_CN.json`).
 - `scripts/`: Maintenance and validation utilities (`validate_registry.py`, `check_upstream_models.py`).
 
@@ -42,12 +42,14 @@ Verify repository roles before making changes:
 ## 3. Hard Engineering Rules
 
 1. **Zero External Dependencies & No Binaries**: All provider and adapter scripts (`entry.py`) must use the **Python 3 standard library only** (e.g. `urllib.request`, `socket`, `ssl`, `json`, `hashlib`, `struct`). Never import third-party packages (no `requests`, `websockets`, `aiohttp`) and strictly **never distribute precompiled binary executables** (to guarantee auditability, portability across `x86_64`/`aarch64`, and zero-dependency distribution).
-2. **Resource ID Structure**: Stable machine IDs follow `<kind>.<folder>.<name>`:
-   - Providers: `provider.<folder>.<name>` (streaming providers **must** end with `.streaming`).
-   - Models: `model.<backend>.<name>` (e.g., `model.sherpa-onnx.<name>`).
-   - Adapters: `adapter.<folder>.<name>`.
-   - Triggers: `trigger.<folder>.<name>`.
-   - Receivers: `receiver.<folder>.<name>`.
+2. **Resource ID & Path Structure**:
+   - The first dot segment is the resource kind (`provider`, `adapter`, `trigger`, `receiver`, `model`).
+   - Subsequent dot-separated segments dynamically map to directory hierarchy (`Path(*tokens[1:])`):
+     - Adapters: `adapter.<name>` $\to$ `resources/adapters/<name>/`
+     - Providers: `provider.<vendor>.<name>` $\to$ `resources/providers/<vendor>/<name>/`
+     - Triggers: `trigger.<vendor>.<name>` $\to$ `resources/triggers/<vendor>/<name>/`
+     - Receivers: `receiver.<name>` $\to$ `resources/receivers/<name>/`
+     - Models: `model.<backend>.<name>` (e.g., `model.sherpa-onnx.<name>`).
    - `short_id` is required for CLI/GUI display, but never used for internal resolution.
 3. **Environment Variable Rules**:
    - Cloud ASR Providers must use the `VINPUT_ASR_*` namespace.
@@ -59,8 +61,9 @@ Verify repository roles before making changes:
    - `https://gh-proxy.com/https://raw.githubusercontent.com/xifan2333/vinput-registry/main/...`
    - `https://ghfast.top/https://raw.githubusercontent.com/xifan2333/vinput-registry/main/...`
 5. **i18n Parity**: Any new or updated resource must contain both `<id>.title` and `<id>.description` in both `i18n/en_US.json` and `i18n/zh_CN.json`.
-6. **Adapter Stderr Silence (Desktop Notification Coupling)**: `vinput-daemon` reads an adapter's `stderr` line-by-line and translates every non-empty line directly into a D-Bus desktop error notification (`EmitNotification`). Adapters must **never print operational logs, startup banners, options, or HTTP 200 access logs to `stderr`**. Normal operation must be 100% silent; only fatal startup failures or HTTP 4xx/5xx errors may be emitted to `stderr`.
-7. **Explicit Adapter Port Requirement (No Implicit Defaults)**: Adapters must require an explicit, namespaced port environment variable (e.g., `TEXT_CLEANER_PORT`, `MTRAN_PORT`) declared with `"required": true` in `registry/adapters.json`. Scripts must never silently fall back to an internal hardcoded default port when the env variable is missing or empty, so users always know exactly which port to set in their matching LLM provider `base_url`.
+6. **Desktop Notification Coupling (Stderr Silence)**: `vinput-daemon` translates every non-empty line of a resource's `stderr` directly into a D-Bus desktop notification (`EmitNotification`). Normal operation must be 100% silent; only fatal startup failures or localized errors may be emitted to `stderr` as JSONL (`{"title": "...", "body": "..."}`).
+7. **Command Pipe Filter Architecture**: Adapters transform text or selection commands as stateless Unix pipe filters (`stdin -> stdout` JSON). Adapters do not run as persistent HTTP servers and do not expose or require port environment variables.
+8. **Canonical Contracts & AST Rules**: All resource scripts must conform to the canonical templates in `references/templates/` (`batch_asr.py`, `streaming_asr.py`, `adapter.py`, `client.py`) and pass `.ast-grep/rules/` static verification.
 
 ---
 
@@ -88,6 +91,13 @@ mise run lint
 
 Follow progressive disclosure: consult specific reference files depending on your current task:
 
+### Task: Authoring a New Resource Script
+Read canonical templates in **[references/templates/](references/templates/)**:
+- `streaming_asr.py`: Duplex RFC 6455 WebSocket streaming speech-to-text.
+- `batch_asr.py`: One-shot standard library HTTP/multipart audio transcription.
+- `adapter.py`: Text rewriting and command transform Unix pipe filter.
+- `client.py`: Symmetric client with command emitting and broadcast listening.
+
 ### Task: Writing or Debugging a Trigger / Receiver
 Read **[references/client-protocol.md](references/client-protocol.md)**
 - Domain split: `trigger.*` (session control, `VINPUT_TRIGGER_*`) vs `receiver.*` (result consumption, `VINPUT_RECEIVER_*`); protocol layer is symmetric.
@@ -100,7 +110,7 @@ Read **[references/client-protocol.md](references/client-protocol.md)**
 
 ### Task: Writing or Debugging a Cloud ASR Provider
 Read **[references/provider-protocol.md](references/provider-protocol.md)**
-- Streaming duplex JSONL protocol (stdin `audio`, `finish`, `cancel` vs stdout `session_started`, `partial`, `final`, `error`, `closed`).
+- Streaming duplex JSONL protocol (stdin `audio`, `finish`, `cancel` vs stdout `session_started`, `partial`, `final`, `closed`).
 - Raw PCM binary streaming (`VINPUT_ASR_BINARY_MODE` / Opcode `0x2`) vs Base64 text frames.
 - Single final per utterance semantics (preventing premature cutoffs on mid-stream completions).
 - Pure Python 3 standard library RFC 6455 WebSocket client architecture.

@@ -8,9 +8,8 @@ This document details the communication protocol between `vinput-daemon` and Clo
 
 Streaming providers are long-running child processes spawned by `vinput-daemon` when recording starts. They maintain a bidirectional stream over standard pipes: `stdin` carries input, `stdout` carries results, and `stderr` carries notifications to the user (see section 4).
 
-### Trigger / Identifier
-- Resource ID **must** end with `.streaming` (e.g. `provider.bailian.streaming`, `provider.openai-compatible.streaming`).
-- In `registry/providers.json`, `"stream": true`.
+### Trigger / Configuration
+- In `registry/providers.json`, declared with `"stream": true`.
 
 ### Standard Input (`stdin`): Daemon -> Provider
 Daemon writes **one JSON object per line (JSONL)** terminated by `\n`:
@@ -55,16 +54,14 @@ Provider writes **strictly clean JSONL** to `stdout`. Every line must be a valid
    ```
    - Emitted when user finishes speaking and the entire utterance is committed.
    - **Single Final per Utterance**: `vinput-daemon` commits and ends the current utterance upon receiving the first non-empty `final`. Providers must emit exactly **one** single final at the conclusion of recording (after `finish`), rather than multiple fragmented finals during recording.
-4. **`error`**:
-   ```json
-   {"type": "error", "message": "Human readable error details"}
-   ```
-   - Emitted on unrecoverable upstream failures.
-5. **`closed`**:
+4. **`closed`**:
    ```json
    {"type": "closed"}
    ```
    - Emitted just before script exits after clean termination.
+
+> [!NOTE]
+> The legacy stdout `error` event (`{"type": "error", "message": "..."}`) is deprecated and completely removed. All operational errors must be reported via `stderr` desktop notification JSONL (see Section 4).
 
 ---
 
@@ -83,9 +80,8 @@ When bridging audio from `vinput-daemon` to upstream WebSocket servers (e.g. Ope
 
 Batch providers are short-lived child processes spawned by `vinput-daemon` after user stops recording.
 
-### Trigger / Identifier
-- Resource ID does **not** end with `.streaming` (e.g. `provider.bailian.batch`).
-- In `registry/providers.json`, `"stream": false`.
+### Trigger / Configuration
+- In `registry/providers.json`, declared with `"stream": false`.
 
 ### Standard Input (`stdin`)
 - Daemon pipes the **raw, uncompressed binary PCM bytes** (`S16_LE`, 16000Hz, mono) directly into `stdin`.
@@ -119,13 +115,13 @@ Each line must end with `\n` and be flushed immediately. One line is one notific
 
 Provider notification bodies SHOULD be concise, single-line, user-facing sentences without a duplicated brand prefix or traceback. Connection traces, retry logs, and debugging output MUST NOT be written to `stderr`, because the host displays every non-empty line to the user.
 
-### Relationship to the streaming `stdout` `error` event
-- A streaming `stdout` `{"type":"error","message":...}` event **ends the session as failed**; its `message` reports the terminal failure.
-- A `stderr` notification never changes the session result; it informs the user but is not a verdict on the run.
-- A failing streaming provider may therefore emit both a `stdout` `error` event and a `stderr` notification. Batch providers have no structured `stdout` error event and report user-facing failure details through `stderr`.
+### Terminal Error Reporting via `stderr`
+- In v2, the old structured `stdout` `{"type":"error","message":...}` event is retired.
+- All fatal or usage errors must be emitted to `stderr` as JSONL desktop notifications via `notify_error()` before the process exits with a non-zero code.
+- Normal operation must remain 100% silent on `stderr`.
 
 ### Applies to adapters too
-Adapters (`resources/adapters/`) use the same `stderr` notification contract and feed the same host-side `NotificationBridge`. Their request/result transport is HTTP, so `stdin` and `stdout` currently carry nothing.
+Adapters (`resources/adapters/`) use the same `stderr` notification contract and feed the same host-side `NotificationBridge`. Adapters operate as Unix command pipe filters reading JSON from `stdin` and writing rewritten text or commands to `stdout`.
 
 ### Exit Codes
 - `0`: Success.

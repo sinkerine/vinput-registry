@@ -17,6 +17,7 @@ ENTRY = Path(__file__).resolve().parents[1] / "resources/providers/openai-compat
 spec = importlib.util.spec_from_file_location("vinput_streaming", ENTRY)
 assert spec and spec.loader
 provider = importlib.util.module_from_spec(spec)
+sys.modules[spec.name] = provider
 spec.loader.exec_module(provider)
 
 
@@ -26,10 +27,12 @@ class FakeWebSocket:
 
     def __init__(self, *args):
         self.messages = queue.Queue()
+        self.commits = 0
 
     def send_json(self, event):
         if event["type"] != "input_audio_buffer.commit":
             return
+        self.commits += 1
         self.messages.put({"type": "input_audio_buffer.committed", "item_id": "test"})
         event = (
             {"type": "error", "error": {"message": "Test API failure"}}
@@ -71,37 +74,50 @@ class StreamingTests(unittest.TestCase):
     def test_invalid_live_configuration_is_rejected(self):
         for env in (
             {"VINPUT_ASR_LANGUAGES": '"en"'},
+            {"VINPUT_ASR_LANGUAGES": "["},
             {"VINPUT_ASR_DELAY": "invalid"},
             {"VINPUT_ASR_ENABLE_VAD": "true"},
         ):
-            with patch.dict(os.environ, env, clear=True), self.assertRaises(ValueError):
+            with patch.dict(os.environ, env, clear=True), self.assertRaises(provider.ConfigError):
                 provider.build_session_update_event("gpt-live-transcribe", 24000, "transcription")
 
     def test_other_models_keep_model_query_and_single_language_hint(self):
         with patch.dict(os.environ, {"VINPUT_ASR_LANGUAGE": "ja"}, clear=True):
             self.assertEqual(provider.build_url("whisper-1"), "wss://api.openai.com/v1/realtime?model=whisper-1")
             event = provider.build_session_update_event("whisper-1", 24000, "transcription")
-        self.assertEqual(event["session"]["audio"]["input"]["transcription"], {"model": "whisper-1", "language": "ja"})
+        self.assertEqual(event["session"]["input_audio_transcription"], {"model": "whisper-1", "language": "ja"})
 
     def test_handshake_preserves_first_websocket_event(self):
         client = provider.WebSocketClient.__new__(provider.WebSocketClient)
         client.host, client.port, client.path = "example.com", 80, "/"
         client.timeout, client.headers, client.scheme = 1, {}, "ws"
         sock = MagicMock()
+        key_bytes = bytes(16)
+        key = base64.b64encode(key_bytes)
+        accept = base64.b64encode(provider.hashlib.sha1(key + provider.GUID.encode("ascii")).digest())
+        sock.recv.return_value = (
+            b"HTTP/1.1 101 Switching Protocols\r\nSec-WebSocket-Accept: " + accept + b"\r\n\r\nfirst-event"
+        )
         with (
             patch.object(provider.socket, "create_connection", return_value=sock),
-            patch.object(
-                client, "_read_http_response", return_value=b"HTTP/1.1 101 Switching Protocols\r\n\r\nfirst-event"
-            ),
-            patch.object(client, "_validate_handshake"),
+            patch.object(provider.secrets, "token_bytes", return_value=key_bytes),
         ):
             self.assertIs(client._connect(), sock)
         self.assertEqual(client._recv_buffer, b"first-event")
 
     def test_commit_acknowledgement_preserves_text_already_streamed(self):
-        state = {"last_item_id": "", "partials": {"test": "Already transcribed"}}
-        provider.handle_server_message({"type": "input_audio_buffer.committed", "item_id": "test"}, state)
+        state = {"last_item_id": "", "partials": {}}
+        with patch.object(provider, "emit_partial") as emit_partial:
+            provider.handle_server_message(
+                {"type": "conversation.item.input_audio_transcription.delta", "item_id": "test", "delta": "Already"},
+                state,
+            )
+            provider.handle_server_message({"type": "input_audio_buffer.committed", "item_id": "test"}, state)
+            provider.handle_server_message(
+                {"type": "conversation.item.input_audio_transcription.delta", "delta": " transcribed"}, state
+            )
         self.assertEqual(state["partials"]["test"], "Already transcribed")
+        emit_partial.assert_called_with("Already transcribed")
 
     def run_adapter(self, failure=False, commit_audio=False):
         audio = {
@@ -112,6 +128,8 @@ class StreamingTests(unittest.TestCase):
         }
         input_text = json.dumps(audio) + '\n{"type":"finish"}\n'
         output = io.StringIO()
+        notifications = io.StringIO()
+        websocket = FakeWebSocket()
         with (
             patch.dict(
                 os.environ,
@@ -122,29 +140,36 @@ class StreamingTests(unittest.TestCase):
                 },
                 clear=True,
             ),
-            patch.object(provider, "WebSocketClient", FakeWebSocket),
+            patch.object(provider, "WebSocketClient", return_value=websocket),
             patch.object(FakeWebSocket, "failure", failure),
             patch.object(sys, "stdin", io.StringIO(input_text)),
             contextlib.redirect_stdout(output),
+            contextlib.redirect_stderr(notifications),
         ):
             status = provider.run()
-        return status, [json.loads(line) for line in output.getvalue().splitlines()]
+        return (
+            status,
+            [json.loads(line) for line in output.getvalue().splitlines()],
+            notifications.getvalue(),
+            websocket,
+        )
 
     def test_waits_for_final_instead_of_closing_after_fixed_grace(self):
-        status, events = self.run_adapter()
+        status, events, _, _ = self.run_adapter()
         self.assertEqual(status, 0)
         self.assertEqual([e["text"] for e in events if e["type"] == "final"], ["The complete final sentence."])
         self.assertEqual(events[-1]["type"], "closed")
 
     def test_finish_does_not_commit_an_already_committed_empty_buffer(self):
-        status, events = self.run_adapter(commit_audio=True)
+        status, events, _, websocket = self.run_adapter(commit_audio=True)
         self.assertEqual(status, 0)
+        self.assertEqual(websocket.commits, 1)
         self.assertEqual(sum(e["type"] == "final" for e in events), 1)
 
     def test_api_failure_is_reported_without_a_final_transcript(self):
-        status, events = self.run_adapter(failure=True)
+        status, events, notifications, _ = self.run_adapter(failure=True)
         self.assertEqual(status, provider.EXIT_RUNTIME_ERROR)
-        self.assertTrue(any(e["type"] == "error" for e in events))
+        self.assertIn("Test API failure", json.loads(notifications)["body"])
         self.assertFalse(any(e["type"] == "final" for e in events))
 
 

@@ -13,10 +13,10 @@ Guidelines, dual-planning model, and hard constraints for AI coding agents worki
 - `registry/adapters.json`: Managed local LLM scene adapter bridge definitions.
 - `registry/triggers.json`: Managed Trigger scripts (peripheral session control).
 - `registry/receivers.json`: Managed Receiver scripts (result consumers).
-- `resources/providers/<group>/<name>/`: Standalone Python 3 scripts (`entry.py` + `README.md`).
-- `resources/adapters/<group>/<name>/`: Standalone Python 3 adapter scripts (`entry.py` + `README.md`).
-- `resources/triggers/<group>/<name>/`: Standalone Python 3 trigger scripts (`entry.py` + `README.md`).
-- `resources/receivers/<group>/<name>/`: Standalone Python 3 receiver scripts (`entry.py` + `README.md`).
+- `resources/providers/<vendor>/<name>/`: Standalone Python 3 scripts (`entry.py` + `README.md`).
+- `resources/adapters/<name>/`: Standalone Python 3 adapter scripts (`entry.py` + `README.md`).
+- `resources/triggers/<vendor>/<name>/`: Standalone Python 3 trigger scripts (`entry.py` + `README.md`).
+- `resources/receivers/<name>/`: Standalone Python 3 receiver scripts (`entry.py` + `README.md`).
 - `i18n/`: Multilingual descriptions (`en_US.json`, `zh_CN.json`).
 - `scripts/`: Maintenance tools, upstream monitor (`check_upstream_models.py`), and registry validator (`validate_registry.py`).
 
@@ -86,7 +86,9 @@ All development follows a strict 5-stage lifecycle:
    - Every `script_urls` array must provide 3 fallback mirrors in order: GitHub raw, `gh-proxy.com`, and `ghfast.top`.
 5. **i18n Parity**:
    - Every new resource requires both `<id>.title` and `<id>.description` in both `i18n/en_US.json` and `i18n/zh_CN.json`.
-6. **Adapter Stderr Silence**:
-   - `vinput-daemon` translates every non-empty line of an adapter's `stderr` directly into a user desktop notification (`EmitNotification`). Adapters must be 100% silent on `stderr` during normal operation (no startup banners, options, or HTTP 200 logs); only fatal errors or 4xx/5xx responses may write to `stderr`.
-7. **Explicit Adapter Ports**:
-   - Adapters must require an explicit port environment variable declared with `"required": true` in `registry/adapters.json`. Never fall back to implicit internal default ports when the env is missing or empty, ensuring users know exactly which port to configure in their LLM provider `base_url`.
+6. **Desktop Notification Coupling (Stderr Silence)**:
+   - `vinput-daemon` translates every non-empty line of a resource's `stderr` directly into a user desktop notification (`EmitNotification`). All resource scripts must be 100% silent on `stderr` during normal operation (no banners, options, or access logs); only fatal errors or notifications may write JSONL (`{"title": "...", "body": "..."}`) to `stderr`.
+7. **Command Pipe Filter Architecture**:
+   - Adapters transform text or selection commands as stateless Unix pipe filters (`stdin -> stdout` JSON). Adapters do not run as persistent HTTP servers and do not expose or require port environment variables.
+8. **Canonical Contracts & AST Rules**:
+   - All resource scripts must conform to the canonical templates in `.agents/skills/vinput-registry-dev/references/templates/` (`batch_asr.py`, `streaming_asr.py`, `adapter.py`, `client.py`) and pass `.ast-grep/rules/` static verification.
